@@ -20,3 +20,9 @@ test('role resets to auto for new and loaded starter sessions',()=>{
   assert.match(app,/loadStarter[\s\S]{0,500}state\.role='auto'/);
   assert.match(app,/startNew[\s\S]{0,500}state\.role='auto'/);
 });
+
+test('home starter shortcuts reuse the canonical full starter briefs',()=>{
+  assert.match(app,/ideas\.Productivity\.find/);
+  assert.match(app,/ideas\.Finance\.find/);
+  assert.doesNotMatch(app,/data-quick="Build a simple personal timesheet for one worker with punch in, punch out, live shift time, history, and monthly calendar\."/);
+});
