@@ -9,14 +9,14 @@ export function selectTemplate({intent,taskType,profile,strategy={}}){
   if(taskType==='comfyui') return 'K';
   if(taskType==='visual-edit') return 'J';
   if(taskType==='visual-generate') return 'I';
+  if(taskType==='app') return 'C';
   if(strategy.useFewShot) return 'F';
   if(taskType==='code-edit') return 'G';
   if(taskType==='research') return 'E';
   if(taskType==='creative') return 'D';
   if(taskType==='writing') return 'B';
-  if((profile.id==='claude'||profile.id==='claude-code')&&(taskType==='agentic'||taskType==='app')) return 'M';
+  if((profile.id==='claude'||profile.id==='claude-code')&&taskType==='agentic') return 'M';
   if(taskType==='agentic') return 'H';
-  if(taskType==='app') return 'C';
   return 'A';
 }
 
@@ -38,12 +38,36 @@ function explicitFlow(text){
   const m=text.match(/(?:main workflow|workflow|main flow)\s*:\s*([^\n.]+)/i);
   return m?m[1].trim():'';
 }
+function screenArchitecture(text,flow){
+  const views=[];
+  const add=v=>{if(v&&!views.includes(v)) views.push(v)};
+  const s=text.toLowerCase();
+  if(/\btoday\b/.test(s)) add('Today');
+  if(/\bweekly\b/.test(s)) add('Weekly');
+  if(/\bhistory\b/.test(s)) add('History');
+  if(/\bmonthly calendar\b/.test(s)) add('Monthly Calendar');
+  else if(/\bcalendar\b/.test(s)) add('Calendar');
+  const settingsItems=[];
+  if(/\bhourly rate\b/.test(s)) settingsItems.push('hourly rate');
+  if(/\bdeductions?\b/.test(s)) settingsItems.push('deductions');
+  if(/\bholidays?\b/.test(s)) settingsItems.push('holidays');
+  if(/\btime format\b/.test(s)) settingsItems.push('time format');
+  if(/\btheme\b/.test(s)) settingsItems.push('theme');
+  if(/\bworkweek\b|\bwork week\b/.test(s)) settingsItems.push('workweek');
+  const hasSettings=/\bsettings\b/.test(s)||settingsItems.length>0;
+  const lines=[];
+  if(flow) lines.push(`- Primary workflow screens/states: ${flow}`);
+  if(views.length) lines.push(`- Primary supporting destinations: ${views.join(' · ')}.`);
+  if(hasSettings) lines.push(`- Keep Settings secondary to the main workflow${settingsItems.length?`; place ${settingsItems.join(', ')} configuration there`:''}.`);
+  lines.push('- Use the smallest navigation structure that makes the main workflow and explicitly requested supporting views obvious; do not invent a dashboard or extra destinations.');
+  return lines.join('\n');
+}
 function renderApp(c){
   const flow=explicitFlow(c.intent.idea);
   const behavior=inferredAppBehavior(c.intent.idea);
   const roleLabel=c.role?.label||'Full-Stack Product Engineer';
   const roleGuidance=c.role?.guidance||'Balance product architecture, frontend behavior, state/data correctness, implementation constraints, and completion quality.';
-  return `Objective:\n${c.intent.task}\n\nIdea Lock:\n${c.intent.idea}\nPreserve the stated product, workflow, requested features, exclusions, and one-job focus. Improve execution without changing the product into something else.\n\nTarget User:\n${c.intent.audience||'Infer the primary real-world user only from the stated product and optimize for that user.'}\n\nMain Workflow:\n${flow||'Derive the primary start-to-finish workflow from the explicit actions in the brief. Preserve stated ordering and keep supporting views secondary to the main job.'}\n\nRequired Product Behavior:\n${bullets(behavior)||'- Implement every explicit feature as working behavior, not a label or placeholder.'}\n- Implement every explicit feature and calculation in the brief.\n- Use one source of truth for shared saved data so views cannot disagree.\n- Define active, empty, completed, saved, edited, and error states only where the product requires them.\n\nRole:\n${roleLabel}\n${roleGuidance}\n\n${buildAppDesignStandard(c.role)}\n\nConstraints / Scope Lock:\n${bullets(c.intent.constraints)||'- Do not invent unrelated pages, metrics, fields, services, or workflows.'}\n- Do not infer a dashboard, team system, analytics suite, or backend unless the brief requires one.\n\nInteraction Rules:\n- Every visible control must perform its stated action.\n- Make the next primary action obvious.\n- Preserve user-entered state through normal navigation.\n${c.agentBlock||''}\n\nTool Guidance:\n${bullets(c.profile.rules)}\n\nDone When:\n- The complete primary workflow works end to end.\n- Every explicitly requested supporting view and setting is usable.\n- Required calculations, persistence, state transitions, and exclusions are correct.\n- The visual result passes the Design & UX Standard and first-screen quality gate.\n- No unrelated features or placeholder interactions remain.\n- Verification evidence supports completion.`;
+  return `Role:\n${roleLabel}\n${roleGuidance}\n\nProduct Mission:\n${c.intent.task}\n\nIdea Lock:\n${c.intent.idea}\nPreserve the stated product, workflow, requested features, exclusions, and one-job focus. Improve execution without changing the product into something else.\n\n${buildAppDesignStandard(c.role)}\n\nTarget User:\n${c.intent.audience||'Infer the primary real-world user only from the stated product and optimize for that user.'}\n\nMain Workflow:\n${flow||'Derive the primary start-to-finish workflow from the explicit actions in the brief. Preserve stated ordering and keep supporting views secondary to the main job.'}\n\nScreen Architecture:\n${screenArchitecture(c.intent.idea,flow)}\n\nRequired Product Behavior:\n${bullets(behavior)||'- Implement every explicit feature as working behavior, not a label or placeholder.'}\n- Implement every explicit feature and calculation in the brief.\n- Use one source of truth for shared saved data so views cannot disagree.\n- Define active, empty, completed, saved, edited, and error states only where the product requires them.\n\nConstraints / Scope Lock:\n${bullets(c.intent.constraints)||'- Do not invent unrelated pages, metrics, fields, services, or workflows.'}\n- Do not infer a dashboard, team system, analytics suite, or backend unless the brief requires one.\n\nInteraction Rules:\n- Every visible control must perform its stated action.\n- Make the next primary action obvious.\n- Preserve user-entered state through normal navigation.\n${c.agentBlock||''}\n\nTool Guidance:\n${bullets(c.profile.rules)}\n\nDone When:\n- The complete primary workflow works end to end.\n- Every explicitly requested supporting view and setting is usable.\n- Required calculations, persistence, state transitions, and exclusions are correct.\n- The visual result passes the Design & UX Standard and first-screen quality gate.\n- No unrelated features or placeholder interactions remain.\n- Verification evidence supports completion.`;
 }
 
 const renderers={
