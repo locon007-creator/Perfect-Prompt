@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0d1726" />
+  <meta name="theme-color" content="#0b1320" />
   <meta name="description" content="Perfect Prompt turns rough ideas into focused, production-ready AI prompts." />
   <title>Perfect Prompt</title>
   <link rel="stylesheet" href="/styles.css" />
@@ -12,30 +12,41 @@
   <div class="app-shell" id="app">
     <header class="topbar">
       <button class="brand" type="button" data-action="home" aria-label="Perfect Prompt home">
-        <span class="brand-mark">P</span><span>Perfect Prompt</span>
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+        <span class="brand-copy"><strong>Perfect Prompt</strong><small>Prompt, perfected.</small></span>
       </button>
       <button class="icon-button" id="menuButton" type="button" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </header>
-
     <main id="screen" class="screen" aria-live="polite"></main>
   </div>
 
   <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
   <aside class="menu-sheet" id="menuSheet" aria-hidden="true" aria-label="Perfect Prompt menu">
     <div class="sheet-handle"></div>
-    <div class="sheet-head"><div><p class="eyebrow">Perfect Prompt</p><h2>Tools & settings</h2></div><button class="close-button" id="menuClose" aria-label="Close menu">×</button></div>
+    <div class="sheet-head">
+      <div><p class="eyebrow">Perfect Prompt</p><h2>Tools & settings</h2></div>
+      <button class="close-button" id="menuClose" aria-label="Close menu">×</button>
+    </div>
     <nav class="menu-list">
-      <button data-menu="ideas"><span class="menu-icon">✦</span><span><strong>Prompt Ideas</strong><small>Practical ideas for everyday apps</small></span><b>›</b></button>
-      <button data-menu="templates"><span class="menu-icon">⌘</span><span><strong>Prompt Templates</strong><small>Ready-to-customize starting requests</small></span><b>›</b></button>
-      <button data-menu="settings"><span class="menu-icon">☼</span><span><strong>Settings</strong><small>Theme and generator preferences</small></span><b>›</b></button>
-      <button data-menu="about"><span class="menu-icon">i</span><span><strong>About</strong><small>Privacy, version and attribution</small></span><b>›</b></button>
+      <button data-menu="ideas"><span class="menu-icon">✦</span><span><strong>Prompt Ideas</strong><small>Everyday ideas ready to customize</small></span><b>›</b></button>
+      <button data-menu="templates"><span class="menu-icon">⌘</span><span><strong>Prompt Templates</strong><small>Structured starting recipes</small></span><b>›</b></button>
+      <button data-menu="settings"><span class="menu-icon">⚙</span><span><strong>Settings</strong><small>Appearance and privacy</small></span><b>›</b></button>
+      <button data-menu="about"><span class="menu-icon">i</span><span><strong>About</strong><small>Version and attribution</small></span><b>›</b></button>
     </nav>
-    <div class="privacy-note"><span>●</span><p><strong>Private by default.</strong><br />Your prompt text stays in this browser unless you copy it elsewhere.</p></div>
+    <div class="quick-theme" aria-label="Quick theme switcher">
+      <span>Appearance</span>
+      <div>
+        <button data-quick-theme="system">System</button>
+        <button data-quick-theme="light">Light</button>
+        <button data-quick-theme="dark">Dark</button>
+      </div>
+    </div>
+    <div class="privacy-note"><span>●</span><p><strong>Private by default.</strong><br />Prompt text stays in this browser unless you copy it elsewhere.</p></div>
   </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js" defer></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
