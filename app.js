@@ -9,7 +9,7 @@ const goalOptions=[['build','Build something','App, website, feature, tool or wo
 const priorityOptions=[['premium','Premium polish'],['simple','Keep it simple'],['mobile','Mobile-first'],['privacy','Privacy-first'],['fast','Fast & efficient'],['exact','Strict requirements'],['versatile','Versatile / reusable'],['commercial','Commercial quality']];
 const targetOptions=[['auto','Let Perfect Prompt choose','Detect the task and use the strongest Prompt Master route'],['agent','Coding / agent tool','Codex, Claude Code, Cursor, Arena, Lovable and similar'],['chat','General AI chat','ChatGPT, Claude, Gemini, Grok and similar'],['visual','Image / video AI','Image, video and creative generation tools']];
 
-const esc=(v='')=>String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+const esc=(v='')=>String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function showToast(text){toast.textContent=text;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),1900)}
 function setTheme(theme){state.theme=theme;localStorage.setItem('pp-theme',theme);document.documentElement.dataset.theme=theme;syncThemeButtons()}
 function syncThemeButtons(){document.querySelectorAll('[data-quick-theme],[data-theme-choice]').forEach(b=>b.classList.toggle('on',(b.dataset.quickTheme||b.dataset.themeChoice)===state.theme))}
