@@ -18,7 +18,7 @@ const normalizeTool=value=>{
   return v.toLowerCase().replace(/\s+/g,'-');
 };
 
-export function extractIntent({idea='',goal='build',priorities=[],target='auto',specificTool='',sessionContext='',examples=[]}={}){
+export function extractIntent({idea='',goal='build',priorities=[],target='auto',specificTool='',role='auto',sessionContext='',examples=[]}={}){
   const text=String(idea).trim();
   const lower=text.toLowerCase();
   const outputFormat=rx(text,/\b(?:return|output|format)\s*[:=-]\s*([^\n]+)/i)||(
@@ -48,6 +48,7 @@ export function extractIntent({idea='',goal='build',priorities=[],target='auto',
   }
   return {
     idea:text,goal,targetTool,outputFormat,constraints:uniq(constraints),input,context,audience,
-    successCriteria,examples:Array.isArray(examples)?examples:[],task,priorities:uniq(priorities),raw:lower,specificTool:String(specificTool||'').trim()
+    successCriteria,examples:Array.isArray(examples)?examples:[],task,priorities:uniq(priorities),raw:lower,
+    specificTool:String(specificTool||'').trim(),role:String(role||'auto').trim()||'auto'
   };
 }

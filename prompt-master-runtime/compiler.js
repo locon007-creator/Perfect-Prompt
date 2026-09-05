@@ -9,6 +9,8 @@ import {runDiagnostics} from './diagnostics.js';
 import {repairDraft} from './repair.js';
 import {validateFinal} from './validator.js';
 import {sanitizePromptInput,agenticAccessWarning} from './safety.js';
+import {resolveAppRole} from './app-role.js';
+import {buildAppDesignLayer} from './app-design.js';
 
 function agentBlock(taskType,profile){
   const agentProfiles=new Set(['codex','claude-code','cline','autonomous-agent','app-generator','browser-agent']);
@@ -20,14 +22,16 @@ export function compileWithPromptMaster(rawInput={}){
   const input=sanitizePromptInput(rawInput);
   const intent=extractIntent(input);
   const taskType=classifyPrimaryTask(intent);
+  const role=resolveAppRole({intent,taskType,selectedRole:intent.role});
   const clarifications=findCriticalGaps(intent,taskType);
   const profile=resolveProfile(intent,taskType);
   const strategy=chooseStrategy(intent,taskType);
   const contextBlock=buildContextBlock(intent,input.sessionContext||'');
   if(contextBlock&&!intent.context) intent.context=contextBlock.replace(/^Memory \/ Context:\n?/,'');
   const template=selectTemplate({intent,taskType,profile,strategy});
-  const runtimeContext={intent,taskType,profile,template,strategy,contextBlock,agentBlock:agentBlock(taskType,profile)};
+  const runtimeContext={intent,taskType,role,profile,template,strategy,contextBlock,agentBlock:agentBlock(taskType,profile)};
   let draft=renderTemplate(template,runtimeContext);
+  if(taskType==='app'&&!/Design & UX Standard:/i.test(draft)) draft=`${draft}\n\n${buildAppDesignLayer(role)}`;
   if(contextBlock&&!draft.startsWith('Memory / Context:')) draft=`${contextBlock}\n\n${draft}`;
   const diagnostics=runDiagnostics(draft,runtimeContext);
   let prompt=repairDraft(draft,diagnostics,runtimeContext);
@@ -40,7 +44,7 @@ export function compileWithPromptMaster(rawInput={}){
     validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   }
   return {
-    prompt,intent,taskType,profile:profile.id,targetLabel:profile.label,profileLabel:profile.label,
+    prompt,intent,taskType,role,profile:profile.id,targetLabel:profile.label,profileLabel:profile.label,
     template,templateId:template,diagnostics,validation,clarifications,strategy,
     engine:'prompt-master-full-runtime',version:'1.8-compatible',credentialsRemoved:Boolean(input.credentialNotice)
   };
