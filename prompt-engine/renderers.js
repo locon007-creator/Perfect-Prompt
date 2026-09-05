@@ -1,10 +1,40 @@
 const bullets=items=>items.filter(Boolean).map(x=>`- ${x}`).join('\n');
-const priors=p=>p.map(x=>({premium:'premium, production-quality polish',simple:'a focused experience with no unnecessary features',mobile:'mobile-first interaction and responsive behavior',privacy:'privacy-first behavior and minimal data collection',fast:'fast and efficient execution',exact:'strict adherence to stated workflow and constraints',versatile:'reusable behavior without becoming generic',commercial:'commercial-grade quality'}[x]||x));
+const priorityMap={premium:'premium, production-quality polish',simple:'a focused experience with no unnecessary features',mobile:'mobile-first interaction and responsive behavior',privacy:'privacy-first behavior and minimal data collection',fast:'fast and efficient execution',exact:'strict adherence to stated workflow and constraints',versatile:'reusable behavior without becoming generic',commercial:'commercial-grade quality'};
+const priors=p=>p.map(x=>priorityMap[x]||x);
 const safeRules=route=>bullets(route.rules||[]);
+
+function cleanTask(task=''){
+  return String(task).replace(/^\s*(?:build|create|make|develop)\s+/i,'').trim();
+}
+
+function normalizedConstraints(intent){
+  const priorityKeys=new Set(Object.keys(priorityMap));
+  const items=[...(intent.constraints||[]).filter(x=>!priorityKeys.has(String(x).toLowerCase())),...priors(intent.priorities||[])];
+  return [...new Set(items.map(x=>String(x).trim()).filter(Boolean))];
+}
+
+function workflowFor(intent){
+  const s=intent.idea.toLowerCase();
+  if(/\btimesheet\b|\bpunch in\b|\bpunch out\b/.test(s)){
+    const primary=['Home'];
+    if(/\bpunch in\b/.test(s)) primary.push('Punch In');
+    if(/\blive shift|active shift|elapsed|live.*time\b/.test(s)) primary.push('Active Shift with live elapsed timer');
+    if(/\bpunch out\b/.test(s)) primary.push('Punch Out');
+    primary.push('Saved Day');
+    const supporting=[];
+    if(/\bhistory\b/.test(s)) supporting.push('History');
+    if(/\bmonthly calendar\b|\bcalendar\b/.test(s)) supporting.push('Monthly Calendar');
+    return `Primary: ${primary.join(' → ')}.${supporting.length?` Supporting views: ${supporting.join(' and ')}.`:''}`;
+  }
+  if(/\bbudget\b/.test(s) && /\bset|create|add\b/.test(s)) return 'Primary: Home → Set Budget → Budgets → Budget Detail/Edit. Keep any additional requested views secondary to this flow.';
+  if(/\brecipe\b/.test(s) && /\bcook|cooking\b/.test(s)) return 'Primary: Home → Recipes/Search → Recipe → Start Cooking. Keep saved or supporting recipe views secondary to cooking.';
+  if(/\btracker\b|\blog\b/.test(s) && /\badd|record|save|entry\b/.test(s)) return 'Primary: Home/List → Add or Record Entry → Saved Entry/Detail → Edit when needed. Add history only when requested.';
+  return 'Define one primary start-to-finish workflow directly from the explicit actions and features in the idea. Keep screens sequential and purposeful, and do not replace the workflow with a dashboard unless explicitly required.';
+}
 
 function agentLayer(route){if(route.profile!=='agent'&&route.profile!=='ide')return'';return `\n\nAllowed Actions:\n- Inspect only the relevant in-scope files and project configuration before editing.\n- Make reversible changes required by this product specification.\n- Run relevant tests, build checks, and verification.\n\nForbidden Actions:\n- Do NOT change unrelated files, architecture, dependencies, services, schemas, or behavior.\n- Do NOT delete files or make destructive/irreversible changes unless explicitly authorized.\n- Do NOT expose secrets or credentials.\n\nStop Conditions:\nStop before destructive or irreversible actions, material scope expansion, a new paid/external dependency, or an architecture decision not determined by this specification.\n\nVerification:\nRun the relevant tests/build/checks and report concrete evidence of what passed. Do not claim completion without verification.`}
 
-function appPrompt(intent,route){return `Objective:\nBuild ${intent.task} as a complete, production-ready product.\n\nIdea Lock:\n${intent.idea}\nPreserve this core idea. Improve execution and usability without changing the product into something else or adding unrelated features.\n\nTarget User:\n${intent.audience||'Infer the primary real-world user from the idea and optimize for that user.'}\n\nMain Workflow:\nDerive one primary start-to-finish workflow from the idea. Keep screens sequential and purposeful. Do not replace the workflow with a dashboard unless explicitly required.\n\nCore Features & Constraints:\n${bullets([...intent.constraints,...priors(intent.priorities)])||'- Include every explicitly requested feature and only necessary supporting behavior.'}\n\nProduct Behavior:\n- Translate every explicit feature into working behavior, not labels or placeholders.\n- Define the active, completed, empty, saved, and error states needed for the core workflow.\n- Preserve user-entered data during normal navigation and persist only what the product actually needs.\n\nInteraction Rules:\n- Every visible control must work.\n- Make the next action obvious.\n- Do not invent pages, metrics, settings, operational fields, or secondary workflows that conflict with the idea.\n- Keep the interface focused on the product's one main job.${agentLayer(route)}\n\nTool Profile:\n${route.profileLabel}\n${safeRules(route)}\n\nDone When:\n- The full primary workflow works end to end.\n- Every requested feature is implemented and usable.\n- Required states, persistence, navigation, and calculations behave correctly.\n- No unrelated features or placeholder interactions remain.\n- The finished product has been verified before presentation.`}
+function appPrompt(intent,route){const constraints=normalizedConstraints(intent);return `Objective:\nBuild ${cleanTask(intent.task)} as a complete, production-ready product.\n\nIdea Lock:\n${intent.idea}\nPreserve this core idea. Improve execution and usability without changing the product into something else or adding unrelated features.\n\nTarget User:\n${intent.audience||'Infer the primary real-world user from the idea and optimize for that user.'}\n\nMain Workflow:\n${workflowFor(intent)}\n\nCore Features & Constraints:\n${bullets(constraints)||'- Include every explicitly requested feature and only necessary supporting behavior.'}\n\nProduct Behavior:\n- Translate every explicit feature into working behavior, not labels or placeholders.\n- Define the active, completed, empty, saved, and error states needed for the core workflow.\n- Preserve user-entered data during normal navigation and persist only what the product actually needs.\n\nInteraction Rules:\n- Every visible control must work.\n- Make the next action obvious.\n- Do not invent pages, metrics, settings, operational fields, or secondary workflows that conflict with the idea.\n- Keep the interface focused on the product's one main job.${agentLayer(route)}\n\nTool Profile:\n${route.profileLabel}\n${safeRules(route)}\n\nDone When:\n- The full primary workflow works end to end.\n- Every requested feature is implemented and usable.\n- Required states, persistence, navigation, and calculations behave correctly.\n- No unrelated features or placeholder interactions remain.\n- The finished product has been verified before presentation.`}
 
 function agentPrompt(intent,route){return `Objective:\n${intent.idea}\n\nStarting State:\nUse the user's stated existing project/repo context. Inspect only what is necessary before editing.\n\nTarget State:\nDeliver the requested outcome completely without broadening scope.\n\nAllowed Actions:\n- Inspect relevant in-scope files and project configuration.\n- Make reversible edits needed for the requested result.\n- Run relevant tests, checks, and build verification.\n\nForbidden Actions:\n- Do NOT change unrelated files or behavior.\n- Do NOT delete files, add external services, change database schemas, or make destructive changes unless explicitly authorized.\n- Do NOT expose secrets or credentials.\n\nStop Conditions:\nStop and ask before any destructive/irreversible action, material scope expansion, new paid/external dependency, or unresolved architecture choice.\n\nVerification:\nRun the relevant tests/build/checks and report concrete evidence of what passed. Do not claim completion without verification.\n\nTool Profile:\n${route.profileLabel}\n${safeRules(route)}\n\nDone When:\nThe requested behavior works, constraints are preserved, verification passes, and no unrelated changes remain.`}
 
