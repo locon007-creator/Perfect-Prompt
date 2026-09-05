@@ -21,6 +21,11 @@ test('role resets to auto for new and loaded starter sessions',()=>{
   assert.match(app,/startNew[\s\S]{0,500}state\.role='auto'/);
 });
 
+test('premium app quality is automatic rather than an optional priority chip',()=>{
+  assert.doesNotMatch(app,/\['premium','Premium polish'\]/);
+  assert.match(app,/Premium UI\/UX.*automatic|premium UI\/UX.*automatic/i);
+});
+
 test('home starter shortcuts reuse the canonical full starter briefs',()=>{
   assert.match(app,/ideas\.Productivity\.find/);
   assert.match(app,/ideas\.Finance\.find/);
