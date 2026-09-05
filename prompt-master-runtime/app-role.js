@@ -16,16 +16,20 @@ export function normalizeAppRole(value='auto'){
   return 'auto';
 }
 
+function explicitPlatform(text=''){
+  const v=String(text).toLowerCase();
+  if(/\bandroid\b/.test(v)) return 'android';
+  if(/\bios\b|\biphone\b|\bipad\b/.test(v)) return 'ios';
+  if(/\bresponsive web\b|\bweb app\b|\bbrowser app\b/.test(v)) return 'web';
+  return '';
+}
+
 export function resolveAppRole({intent,taskType,selectedRole='auto'}={}){
   if(taskType!=='app') return null;
-  const explicit=normalizeAppRole(selectedRole);
-  const text=`${intent?.idea||''} ${intent?.specificTool||''}`.toLowerCase();
-  let id=explicit;
-  if(id==='auto'){
-    if(/android/.test(text)) id='android';
-    else if(/\bios\b|iphone|ipad/.test(text)) id='ios';
-    else if(/responsive web|web app|browser/.test(text)) id='web';
-    else id='full-stack';
-  }
+  const productPlatform=explicitPlatform(intent?.idea||'');
+  const selected=normalizeAppRole(selectedRole);
+  const context=`${intent?.idea||''} ${intent?.specificTool||''}`;
+  let id=productPlatform||selected;
+  if(id==='auto') id=explicitPlatform(context)||'full-stack';
   return {id,label:ROLES[id].label,guidance:ROLES[id].guidance};
 }
