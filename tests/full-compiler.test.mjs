@@ -52,3 +52,15 @@ test('file scoped edit uses File-Scope template',()=>{
   assert.equal(out.template,'G');
   assert.match(out.prompt,/src\/pages\/Login\.tsx/);
 });
+
+test('specific target tool overrides a broad wizard category',()=>{
+  const out=compileWithPromptMaster({idea:'Review this existing codebase and give a bounded implementation prompt.',goal:'improve',target:'chat',specificTool:'Claude'});
+  assert.equal(out.intent.targetTool,'claude');
+  assert.equal(out.profile,'claude');
+});
+
+test('critical Prompt Master gaps are returned for the UI to resolve',()=>{
+  const out=compileWithPromptMaster({idea:'Adapt this existing prompt while preserving its intent.',goal:'improve',target:'auto'});
+  assert.ok(out.clarifications.length>0);
+  assert.ok(out.clarifications.length<=3);
+});
