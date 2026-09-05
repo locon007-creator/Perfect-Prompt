@@ -45,5 +45,3 @@ export function compileWithPromptMaster(rawInput={}){
     engine:'prompt-master-full-runtime',version:'1.8-compatible',credentialsRemoved:Boolean(input.credentialNotice)
   };
 }
-
-export const compilePerfectPrompt=compileWithPromptMaster;
