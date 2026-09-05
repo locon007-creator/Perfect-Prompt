@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compilePerfectPrompt } from '../prompt-engine/compiler.js';
 
-const run=(idea,target='auto',goal='build')=>compilePerfectPrompt({idea,target,goal,priorities:[]});
+const run=(idea,target='auto',goal='build',priorities=[])=>compilePerfectPrompt({idea,target,goal,priorities});
 
 for (const target of ['auto','agent','chat']) {
   test(`app + ${target} preserves product architecture`,()=>{
@@ -21,6 +21,29 @@ for (const target of ['auto','agent','chat']) {
     }
   });
 }
+
+test('app objective does not duplicate the build verb',()=>{
+  const out=run('Build a simple personal timesheet for one worker with punch in and punch out.','agent');
+  assert.doesNotMatch(out.prompt,/Objective:\s*\nBuild Build\b/i);
+});
+
+test('wizard priorities are normalized without raw duplicate labels',()=>{
+  const out=run('Build a simple personal timesheet for one worker.','agent','build',['premium']);
+  const section=out.prompt.split('Core Features & Constraints:')[1]?.split('Product Behavior:')[0]||'';
+  assert.match(section,/premium, production-quality polish/i);
+  assert.doesNotMatch(section,/^- premium\s*$/mi);
+});
+
+test('timesheet workflow is derived into concrete steps instead of delegated back to the builder',()=>{
+  const out=run('Build a simple personal timesheet for one worker with punch in, punch out, live shift time, history, and monthly calendar.','agent');
+  const section=out.prompt.split('Main Workflow:')[1]?.split('Core Features & Constraints:')[0]||'';
+  assert.match(section,/Punch In/i);
+  assert.match(section,/Active Shift/i);
+  assert.match(section,/Punch Out/i);
+  assert.match(section,/History/i);
+  assert.match(section,/Monthly Calendar/i);
+  assert.doesNotMatch(section,/Derive one primary/i);
+});
 
 test('research keeps auditable structure when chat target is selected',()=>{
   const out=run('Research and compare the best current low-cost AI models for a prompt generator.','chat','research');
