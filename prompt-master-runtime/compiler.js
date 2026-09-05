@@ -10,6 +10,7 @@ import {repairDraft} from './repair.js';
 import {validateFinal} from './validator.js';
 import {sanitizePromptInput,agenticAccessWarning} from './safety.js';
 import {resolveAppRole} from './app-role.js';
+import {buildAppDesignLayer} from './app-design.js';
 
 function agentBlock(taskType,profile){
   const agentProfiles=new Set(['codex','claude-code','cline','autonomous-agent','app-generator','browser-agent']);
@@ -30,6 +31,7 @@ export function compileWithPromptMaster(rawInput={}){
   const template=selectTemplate({intent,taskType,profile,strategy});
   const runtimeContext={intent,taskType,role,profile,template,strategy,contextBlock,agentBlock:agentBlock(taskType,profile)};
   let draft=renderTemplate(template,runtimeContext);
+  if(taskType==='app'&&!/Design & UX Standard:/i.test(draft)) draft=`${draft}\n\n${buildAppDesignLayer(role)}`;
   if(contextBlock&&!draft.startsWith('Memory / Context:')) draft=`${contextBlock}\n\n${draft}`;
   const diagnostics=runDiagnostics(draft,runtimeContext);
   let prompt=repairDraft(draft,diagnostics,runtimeContext);
