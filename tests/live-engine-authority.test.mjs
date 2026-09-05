@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const compiler=fs.readFileSync(new URL('../prompt-master-runtime/compiler.js',import.meta.url),'utf8');
 const root=new URL('..',import.meta.url);
 
 test('live UI uses only the full Prompt Master runtime compiler',()=>{
@@ -14,6 +15,11 @@ test('live UI uses only the full Prompt Master runtime compiler',()=>{
 
 test('legacy prompt-engine implementation is physically removed',()=>{
   assert.equal(fs.existsSync(new URL('prompt-engine/',root)),false,'legacy prompt-engine directory must not exist');
+});
+
+test('Prompt Master exposes one compiler entry point with no legacy alias',()=>{
+  assert.match(compiler,/export function compileWithPromptMaster/);
+  assert.doesNotMatch(compiler,/compilePerfectPrompt/);
 });
 
 test('UI can collect a specific target tool and surface critical clarifications',()=>{
