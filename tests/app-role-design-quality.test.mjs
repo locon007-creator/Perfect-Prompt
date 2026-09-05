@@ -39,6 +39,12 @@ test('auto role resolves explicit platform and otherwise stays neutral',()=>{
   assert.equal(app({role:'auto'}).role.id,'full-stack');
 });
 
+test('explicit platform wins over a conflicting selected role',()=>{
+  assert.equal(compileWithPromptMaster({idea:'Build an iOS personal planner app',goal:'build',role:'android'}).role.id,'ios');
+  assert.equal(compileWithPromptMaster({idea:'Build an Android personal planner app',goal:'build',role:'ios'}).role.id,'android');
+  assert.equal(compileWithPromptMaster({idea:'Build a responsive web personal planner app',goal:'build',role:'android'}).role.id,'web');
+});
+
 test('non-app prompts do not receive app role or design boilerplate',()=>{
   const result=compileWithPromptMaster({idea:'Research current battery technologies and compare trade-offs.',goal:'research',role:'android'});
   assert.notEqual(result.taskType,'app');
