@@ -18,9 +18,10 @@ test('starter library keeps all 42 app ideas and makes each a compact product br
 test('Smart Timesheet starter is a complete intentional product brief',()=>{
   const t=ideas.Productivity.find(x=>x.title==='Smart Timesheet');
   assert.ok(t);
-  for(const phrase of ['Punch In','Active Shift','Punch Out','Saved Day','Weekly','History','Monthly Calendar','hourly rate','deductions','holidays','Sunday–Friday','locally']){
+  for(const phrase of ['Punch In','Active Shift','Punch Out','Saved Day','Weekly','History','Monthly Calendar','hourly rate','deductions','holidays','Sunday–Friday']){
     assert.match(t.prompt,new RegExp(phrase.replace(/[–-]/g,'[–-]'),'i'),`missing ${phrase}`);
   }
+  assert.match(t.prompt,/local persistence|persist.*locally|save.*locally/i);
   assert.match(t.prompt,/no teams|no employee|do not.*team/i);
   assert.match(t.prompt,/no .*payroll|do not.*payroll/i);
 });
