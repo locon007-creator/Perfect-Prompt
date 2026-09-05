@@ -16,8 +16,8 @@ test('extracts all nine Prompt Master intent dimensions',()=>{
   for(const key of keys) assert.ok(Object.hasOwn(out.intent,key),`missing ${key}`);
 });
 
-test('routes coding agents to an agent template with stop conditions and verification',()=>{
-  const out=compile('Use Codex to update my existing repo and build a polished mobile app. Do not change unrelated files.',{target:'agent'});
+test('routes non-app coding agents to an agent template with stop conditions and verification',()=>{
+  const out=compile('Use Codex to inspect my existing repo and refactor the deployment script. Do not change unrelated files.',{target:'agent',goal:'improve'});
   assert.equal(out.template,'agent-stop');
   assert.match(out.prompt,/Stop Conditions:/);
   assert.match(out.prompt,/Verification:/);
@@ -49,10 +49,13 @@ test('visual generation uses a visual descriptor route with exclusions',()=>{
 
 test('app builds preserve Idea Lock and contamination prevention',()=>{
   const out=compile('Build Drop & Hook Assistant for one truck driver completing multiple stops in a day. No fleet dashboard.',{target:'agent',priorities:['exact','mobile']});
+  assert.equal(out.template,'risen');
   assert.match(out.prompt,/Idea Lock:/);
   assert.match(out.prompt,/unrelated features|do not add/i);
   assert.match(out.prompt,/Main Workflow:/);
   assert.match(out.prompt,/Done When:/);
+  assert.match(out.prompt,/Stop Conditions:/);
+  assert.match(out.prompt,/Verification:/);
 });
 
 test('prompt adaptation uses the decompiler route',()=>{
