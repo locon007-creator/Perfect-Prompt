@@ -49,7 +49,17 @@ export const PROFILE_FAMILIES={
   minimax:{label:'MiniMax'},
   'cursor-windsurf':{label:'Cursor / Windsurf'},
   cline:{label:'Cline'},
+  copilot:{label:'GitHub Copilot'},
+  'app-generator':{label:'Bolt / v0 / Lovable / Figma Make / Google Stitch'},
+  'autonomous-agent':{label:'Devin / SWE-agent'},
+  'research-orchestration':{label:'Perplexity / Manus'},
+  'browser-agent':{label:'Computer-use / Browser Agent'},
   visual:{label:'Image / Video AI'},
   'image-edit':{label:'Reference Image Editing'},
-  comfyui:{label:'ComfyUI'}
+  comfyui:{label:'ComfyUI'},
+  '3d':{label:'Text-to-3D / Game Asset AI'},
+  'in-engine-3d':{label:'Unity / Blender AI'},
+  video:{label:'Video AI'},
+  voice:{label:'Voice AI'},
+  'workflow-ai':{label:'Zapier / Make / n8n'}
 };
