@@ -20,7 +20,8 @@ function taskType(text,goal){
   if(has(s,/\bimage\b|\bphoto\b|\billustration\b|\bvideo\b|\brender\b|\bmidjourney\b|\bdall[- ]?e\b|\bsora\b/)) return 'visual';
   if(has(s,/\bresearch\b|\bcompare\b|\brecommend\b|\bcurrent\b|\blatest\b/)||goal==='research') return 'research';
   if(has(s,/\b(src\/|\.tsx\b|\.jsx\b|\.js\b|\.ts\b|function\b|component\b|handle[A-Z]\w*|cursor\b|windsurf\b)/)) return 'code-edit';
-  if(has(s,/\bapp\b|\bwebsite\b|\bweb app\b|\bmobile\b|\bworkflow\b|\btracker\b|\bdashboard\b|\bfeature\b/)) return 'app';
+  if(has(s,/\bapp\b|\bwebsite\b|\bweb app\b|\bmobile\b|\bscreen\b|\bworkflow\b|\btracker\b|\bdashboard\b|\bfeature\b|\btimesheet\b|\bcalendar\b|\bbudget\b|\bcalculator\b|\bform\b|\blogin\b|\bnavigation\b|\bpunch in\b|\bpunch out\b/)) return 'app';
+  if(goal==='build' && has(s,/\b(build|create|make|develop)\b/) && has(s,/\b(tool|system|product|utility|portal|interface|page|site)\b/)) return 'app';
   if(has(s,/\bemail\b|\barticle\b|\bcopy\b|\bcaption\b|\bpost\b|\breport\b|\bproposal\b|\bwrite\b/)) return 'writing';
   return 'general';
 }
@@ -28,11 +29,11 @@ function templateFor(type,profile,text){
   if(type==='decompiler') return 'decompiler';
   if(type==='visual') return 'visual';
   if(type==='research') return 'auditable';
-  if(type==='code-edit' && profile==='ide') return 'file-scope';
-  if(profile==='agent' && type!=='research') return 'agent-stop';
+  if(type==='code-edit' && (profile==='ide'||profile==='agent')) return 'file-scope';
+  if(type==='app') return 'risen';
+  if(profile==='agent') return 'agent-stop';
   if(profile==='claude' && /complex|multi-step|repo|codebase|agent/i.test(text)) return 'claude-task-brief';
   if(type==='writing') return 'costar';
-  if(type==='app') return 'risen';
   return 'rtf';
 }
 export function routePrompt(intent){
