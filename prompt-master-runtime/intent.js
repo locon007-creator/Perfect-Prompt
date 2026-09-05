@@ -6,9 +6,10 @@ const TOOL_ALIASES=[
   [/^codex$|^chatgpt work$/i,'codex'],[/^gemini$/i,'gemini'],[/^grok$|^xai$/i,'grok'],
   [/^cursor$|^windsurf$/i,'cursor-windsurf'],[/^cline$/i,'cline'],[/^antigravity$/i,'antigravity'],
   [/^qwen\s*2\.5$/i,'qwen25'],[/^qwen\s*3$/i,'qwen3'],[/^ollama$/i,'ollama'],[/^deepseek(?:-|\s)?r1$/i,'deepseek-r1'],[/^minimax/i,'minimax'],
-  [/^midjourney$|^dall[- ]?e(?:\s*3)?$|^stable diffusion$|^sora$|^runway$|^kling$|^ltx video$|^dream machine$/i,'visual'],
+  [/^midjourney$|^dall[- ]?e(?:\s*3)?$|^stable diffusion$/i,'visual'],[/^sora$|^runway$|^kling$|^ltx video$|^dream machine$|^luma$/i,'video'],
   [/^comfyui$/i,'comfyui'],[/^copilot$|^github copilot$/i,'copilot'],[/^bolt$|^v0$|^lovable$|^figma make$|^google stitch$|^stitch$/i,'app-generator'],
-  [/^devin$|^swe-agent$/i,'autonomous-agent'],[/^perplexity$|^manus$/i,'research-agent'],[/^zapier$|^make$|^n8n$/i,'workflow-ai']
+  [/^devin$|^swe-agent$/i,'autonomous-agent'],[/^perplexity$|^manus$/i,'research-orchestration'],[/^comet$|^openai atlas$|^claude in chrome$|^browser agent$/i,'browser-agent'],
+  [/^zapier$|^make$|^make\.com$|^n8n$/i,'workflow-ai'],[/^elevenlabs$/i,'voice'],[/^meshy$|^tripo$|^rodin$/i,'3d']
 ];
 const normalizeTool=value=>{
   const v=String(value||'').trim();
@@ -42,7 +43,8 @@ export function extractIntent({idea='',goal='build',priorities=[],target='auto',
     else if(/\bgemini\b/i.test(text)) targetTool='gemini';
     else if(/\bgrok\b|\bxai\b/i.test(text)) targetTool='grok';
     else if(/\bcomfyui\b/i.test(text)) targetTool='comfyui';
-    else if(/\b(midjourney|dall[- ]?e|sora|runway|stable diffusion|kling|ltx video|dream machine)\b/i.test(text)) targetTool='visual';
+    else if(/\b(midjourney|dall[- ]?e|stable diffusion)\b/i.test(text)) targetTool='visual';
+    else if(/\b(sora|runway|kling|ltx video|dream machine|luma)\b/i.test(text)) targetTool='video';
   }
   return {
     idea:text,goal,targetTool,outputFormat,constraints:uniq(constraints),input,context,audience,
