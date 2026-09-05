@@ -45,6 +45,23 @@ test('timesheet workflow is derived into concrete steps instead of delegated bac
   assert.doesNotMatch(section,/Derive one primary/i);
 });
 
+test('timesheet gets obvious functional behavior without speculative extras',()=>{
+  const out=run('Build a simple personal timesheet for one worker with punch in, punch out, live shift time, history, and monthly calendar.','agent','build',['premium']);
+  const section=out.prompt.split('Product Behavior:')[1]?.split('Interaction Rules:')[0]||'';
+  assert.match(section,/Punch In records the current start time/i);
+  assert.match(section,/live elapsed/i);
+  assert.match(section,/Punch Out records the end time/i);
+  assert.match(section,/calculates.*worked duration/i);
+  assert.match(section,/History.*saved shifts/i);
+  assert.match(section,/Monthly Calendar.*worked days.*hours/i);
+  assert.doesNotMatch(section,/payroll|overtime|GPS|location tracking|team|manager|approval/i);
+});
+
+test('generic apps do not receive timesheet-specific inferred behavior',()=>{
+  const out=run('Build a simple grocery list app with add, edit, delete, and saved items.','agent');
+  assert.doesNotMatch(out.prompt,/Punch In|Punch Out|worked duration|Monthly Calendar/i);
+});
+
 test('research keeps auditable structure when chat target is selected',()=>{
   const out=run('Research and compare the best current low-cost AI models for a prompt generator.','chat','research');
   assert.equal(out.template,'auditable');
