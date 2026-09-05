@@ -13,6 +13,8 @@ export function validateFinal(prompt,{intent,taskType,profile,template,diagnosti
   if(blockerIds.length) warnings.push(`diagnostic-blockers:${blockerIds.join(',')}`);
   const src=(intent?.idea||'').toLowerCase();
   if(taskType==='app'){
+    if(!has(p,/Design & UX Standard:/i)) errors.push('app-missing-design-standard');
+    if(!has(p,/functional prototype is not complete/i)||!has(p,/first main screen.*finished premium product/i)) errors.push('app-missing-first-screen-gate');
     const explicit=['weekly','history','monthly calendar','hourly rate','deductions','holidays','punch in','punch out'];
     for(const term of explicit) if(src.includes(term) && !p.toLowerCase().includes(term)) errors.push(`missing-explicit:${term}`);
     if(/no employee management|no teams|no scheduling|no gps tracking|no payroll processing|no employer dashboard/.test(src)){
