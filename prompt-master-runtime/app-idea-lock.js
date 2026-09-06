@@ -11,12 +11,21 @@ function isSentenceLike(line) {
 
 function labeledValues(idea, label, max = 12) {
   const lines = linesOf(idea);
-  const labelRx = new RegExp(`^${label}(?:\\s+[^:]{1,64})?\\s*:?(?:\\s+(.*))?$`, 'i');
+  const starts = new RegExp(`^(${label})\\b(.*)$`, 'i');
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(labelRx);
+    const match = lines[i].match(starts);
     if (!match) continue;
     const out = [];
-    if (match[1]) out.push(match[1].replace(/^[-•]\s*/, ''));
+    const rest = (match[2] || '').trim();
+    if (rest) {
+      const colon = rest.indexOf(':');
+      if (colon >= 0) {
+        const after = rest.slice(colon + 1).trim();
+        if (after) out.push(after.replace(/^[-•]\s*/, ''));
+      } else {
+        out.push(rest.replace(/^[-•]\s*/, ''));
+      }
+    }
     for (let j = i + 1; j < lines.length && out.length < max; j++) {
       const line = lines[j];
       if (!line) {
@@ -29,7 +38,7 @@ function labeledValues(idea, label, max = 12) {
         continue;
       }
       if (isSentenceLike(line)) break;
-      if (/^(?:State\s+\d|Button|Navigate|Arrive|Depart|Home|Setup|Work Mode|Create Route|Search Memory|Start Route|Final Stop|End of Day|Persistence|Visual Direction)\b/i.test(line)) break;
+      if (/^(?:State\s+\d|Button|Navigate|Arrive|Depart|Setup|Work Mode|Create Route|Search Memory|Start Route|Final Stop|End of Day|Persistence|Visual Direction)\b/i.test(line)) break;
       if (line.length <= 64) {
         out.push(line);
         continue;
@@ -42,10 +51,20 @@ function labeledValues(idea, label, max = 12) {
 }
 
 function explicitFlow(idea) {
-  const inline = clean(idea).match(/(?:main workflow|primary workflow|main flow|workflow)\s*:\s*([^\n.]+)/i);
+  const text = clean(idea);
+  const inline = text.match(/(?:main workflow|primary workflow|main flow|workflow)\s*:\s*([^\n.]+)/i);
   if (inline) return inline[1].trim();
-  const block = labeledValues(idea, '(?:Main Workflow|Primary Workflow|Main Flow|Workflow)', 2);
-  return block.find(value => /(?:→|->|>)/.test(value)) || '';
+  const lines = linesOf(text);
+  const heading = /^(?:Main Workflow|Primary Workflow|Main Flow|Workflow)$/i;
+  for (let i = 0; i < lines.length; i++) {
+    if (!heading.test(lines[i])) continue;
+    for (let j = i + 1; j < lines.length; j++) {
+      if (!lines[j]) continue;
+      if (/(?:→|->|>)/.test(lines[j])) return lines[j].trim();
+      break;
+    }
+  }
+  return '';
 }
 
 function blockAfterLabel(idea, label) {
