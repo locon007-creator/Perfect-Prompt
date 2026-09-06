@@ -158,7 +158,7 @@ function isLikelyTruncatedBullet(line) {
   return !keep.has(match[1].toLowerCase());
 }
 
-function sanitizeIdeaSource(idea) {
+export function sanitizeIdeaSource(idea) {
   const lines = String(idea || '').replace(/\r/g, '').split('\n');
   return lines.filter(line => !isLikelyTruncatedBullet(line)).join('\n').trim();
 }
