@@ -1,16 +1,18 @@
-export const PURIFIER_VERSION='1.0.0';
+export const PURIFIER_VERSION='1.1.0';
 export const PURIFIER_SEALED=true;
 
 const DOMAIN_SIGNATURES=Object.freeze([
-  {id:'trucking',re:/\b(?:drop\s*&\s*hook|drop trailer|hook trailer|trailer number|truck number|unit number|starting mileage|ending mileage|saved stops?|saved routes?|route\s*&\s*equipment|equipment edit|facility search)\b/i},
+  {id:'trucking',re:/\b(?:drop\s*&\s*hook|drop trailer|hook trailer|trailer number|truck number|unit number|starting mileage|ending mileage|saved stops?|saved routes?|route\s*&\s*equipment|equipment edit|facility search|home base|work mode)\b/i},
   {id:'timesheet',re:/\b(?:punch in|punch out|clock in|clock out|active shift|timesheet|hourly rate|gross pay|overtime|worked hours|monthly calendar)\b/i},
   {id:'prompting',re:/\b(?:prompt generator|prompt compiler|prompt station|copy prompt|arena ai|openrouter|model selector|prompt strategies)\b/i},
-  {id:'finance',re:/\b(?:available balance|remaining budget|monthly income|budget categories?|savings goals?|recurring bills?|income transaction|expense transaction|merchant\/description)\b/i},
-  {id:'loan',re:/\b(?:borrower|loan balance|payment arrangement|repayment schedule)\b/i},
-  {id:'fitness',re:/\b(?:workout|exercise log|sets and reps|rest timer|personal record)\b/i},
-  {id:'habits',re:/\b(?:habit tracker|daily habits?|streaks?|tap-to-complete|weekly target)\b/i},
+  {id:'finance',re:/\b(?:available balance|remaining budget|monthly income|budget categories?|savings goals?|recurring bills?|income transaction|expense transaction|merchant\/description|amount remaining|add spending)\b/i},
+  {id:'loan',re:/\b(?:borrower|loan balance|payment arrangement|repayment schedule|payment schedule|remaining loan)\b/i},
+  {id:'fitness',re:/\b(?:workout|exercise log|sets and reps|rest timer|personal record|training session)\b/i},
+  {id:'health',re:/\b(?:hydration|water intake|symptom log|medication log|blood pressure|glucose|health tracker)\b/i},
+  {id:'habits',re:/\b(?:habit tracker|daily habits?|streaks?|tap-to-complete|weekly target|habit check-in)\b/i},
   {id:'flashcards',re:/\b(?:flashcards?|study deck|self-grade|hard\s*\/\s*good\s*\/\s*easy|mastery meter)\b/i},
-  {id:'recipes',re:/\b(?:recipe app|ingredients?|start cooking|cooking mode|meal plan)\b/i}
+  {id:'recipes',re:/\b(?:recipe app|ingredients?|start cooking|cooking mode|meal plan|prep time)\b/i},
+  {id:'focus',re:/\b(?:focus timer|focus session|break length|focused minutes|countdown timer|pomodoro)\b/i}
 ]);
 
 const HEADINGS=new Set([
@@ -79,26 +81,48 @@ function compactBlankLines(lines){
   return out;
 }
 
-export function assertPromptPure(output,sourceIdea){
-  if(PURIFIER_SEALED!==true) throw new Error('Perfect Prompt purifier seal is invalid.');
-  const allowed=activeDomains(sourceIdea);
-  const leaked=[];
-  for(const line of normalize(output).split('\n')){
-    const domain=foreignDomain(line,allowed);
-    if(domain) leaked.push(domain);
+function assertSingleCanonicalSections(lines){
+  const counts=new Map();
+  for(const line of lines){
+    const t=line.trim();
+    if(!HEADINGS.has(t)) continue;
+    counts.set(t,(counts.get(t)||0)+1);
   }
-  if(leaked.length) throw new Error(`Perfect Prompt purifier blocked cross-domain contamination: ${[...new Set(leaked)].join(', ')}`);
+  const duplicates=[...counts].filter(([,count])=>count>1).map(([name])=>name);
+  if(duplicates.length) throw new Error(`Perfect Prompt purifier blocked duplicate canonical sections: ${duplicates.join(', ')}`);
+}
 
-  const lines=normalize(output).split('\n');
+function assertSingleNavigationDeclaration(lines){
+  const nav=lines.filter(line=>/^\s*[-*•]\s+Primary supporting destinations:/i.test(line));
+  if(nav.length>1) throw new Error('Perfect Prompt purifier blocked conflicting navigation declarations.');
+}
+
+function assertNoOrphanFragments(lines){
   for(let i=0;i<lines.length;i++){
-    if(!/^\s*[-*•]\s+.+:\s*$/.test(lines[i])) continue;
+    const line=lines[i];
+    if(!/^\s*[-*•]\s+.+:\s*$/.test(line)) continue;
     let j=i+1;
     while(j<lines.length&&!lines[j].trim()) j++;
-    const a=bulletIndent(lines[i]),b=j<lines.length?bulletIndent(lines[j]):null;
+    const a=bulletIndent(line),b=j<lines.length?bulletIndent(lines[j]):null;
     if(j>=lines.length||HEADINGS.has(lines[j]?.trim())||(a!==null&&b!==null&&b<=a)){
       throw new Error('Perfect Prompt purifier blocked an orphaned requirement lead-in.');
     }
   }
+}
+
+export function assertPromptPure(output,sourceIdea){
+  if(PURIFIER_SEALED!==true) throw new Error('Perfect Prompt purifier seal is invalid.');
+  const allowed=activeDomains(sourceIdea);
+  const lines=normalize(output).split('\n');
+  const leaked=[];
+  for(const line of lines){
+    const domain=foreignDomain(line,allowed);
+    if(domain) leaked.push(domain);
+  }
+  if(leaked.length) throw new Error(`Perfect Prompt purifier blocked cross-domain contamination: ${[...new Set(leaked)].join(', ')}`);
+  assertSingleCanonicalSections(lines);
+  assertSingleNavigationDeclaration(lines);
+  assertNoOrphanFragments(lines);
   return true;
 }
 
