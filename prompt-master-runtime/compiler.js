@@ -11,6 +11,7 @@ import {validateFinal} from './validator.js';
 import {sanitizePromptInput,agenticAccessWarning} from './safety.js';
 import {resolveAppRole} from './app-role.js';
 import {buildAppDesignLayer} from './app-design.js';
+import {applyAppIdeaLock} from './app-idea-lock.js';
 
 function agentBlock(taskType,profile){
   const agentProfiles=new Set(['codex','claude-code','cline','autonomous-agent','app-generator','browser-agent']);
@@ -127,10 +128,9 @@ const sectionFallbacks={
 };
 
 const sectionOrder=[
-  'Role','Product Mission','Idea Lock','Target User','Constraints / Scope Lock',
-  'Main Workflow','Screen Architecture','Required Product Behavior','Interaction Rules',
-  'Design & UX Standard','Tool Guidance','Allowed Actions','Forbidden Actions',
-  'Stop Conditions','Verification','Done When'
+  'Role','Product Mission','Idea Lock','Design & UX Standard','Target User',
+  'Main Workflow','Screen Architecture','Required Product Behavior','Constraints / Scope Lock','Interaction Rules',
+  'Tool Guidance','Allowed Actions','Forbidden Actions','Stop Conditions','Verification','Done When'
 ];
 
 const normalizeText=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -208,6 +208,10 @@ function normalizeAppInstructionSections(prompt,idea=''){
   }).join('\n\n');
 }
 
+function lockAppSections(prompt,idea){
+  return normalizeAppInstructionSections(applyAppIdeaLock(prompt,idea),idea);
+}
+
 export function compileWithPromptMaster(rawInput={}){
   const input=sanitizePromptInput(rawInput);
   const intent=extractIntent(input);
@@ -228,11 +232,11 @@ export function compileWithPromptMaster(rawInput={}){
   if(input.credentialNotice) prompt=`${input.credentialNotice}\n\n${prompt}`;
   const warning=agenticAccessWarning(profile,taskType);
   if(warning&&!prompt.includes(warning)) prompt=`${prompt}\n\n${warning}`;
-  if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
+  if(taskType==='app') prompt=lockAppSections(prompt,intent.idea);
   let validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   if(!validation.ok){
     prompt=repairDraft(prompt,diagnostics,runtimeContext);
-    if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
+    if(taskType==='app') prompt=lockAppSections(prompt,intent.idea);
     validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   }
   return {
