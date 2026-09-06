@@ -11,7 +11,7 @@ import {validateFinal} from './validator.js';
 import {sanitizePromptInput,agenticAccessWarning} from './safety.js';
 import {resolveAppRole} from './app-role.js';
 import {buildAppDesignLayer} from './app-design.js';
-import {applyAppIdeaLock} from './app-idea-lock.js';
+import {applyAppIdeaLock,sanitizeIdeaSource} from './app-idea-lock.js';
 
 function agentBlock(taskType,profile){
   const agentProfiles=new Set(['codex','claude-code','cline','autonomous-agent','app-generator','browser-agent']);
@@ -193,7 +193,7 @@ function normalizeAppInstructionSections(prompt,idea=''){
 
   return sections.map(section=>{
     if(section.heading==='Idea Lock'){
-      const exact=section.lines.map(x=>String(x).trimEnd()).filter(x=>x.trim()).join('\n').trim();
+      const exact=sanitizeIdeaSource(idea);
       return `Idea Lock:\n${exact}`;
     }
     const fallbacks=sectionFallbacks[section.heading]||[
