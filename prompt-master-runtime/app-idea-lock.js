@@ -48,6 +48,10 @@ function flowStates(flow) {
   return flow.split(/\s*(?:→|->|>)\s*/).map(x => x.trim()).filter(Boolean);
 }
 
+function sourceHas(text, pattern) {
+  return pattern.test(text);
+}
+
 function productBehaviorFromIdea(idea, flow) {
   const text = clean(idea);
   const lines = [];
@@ -58,22 +62,53 @@ function productBehaviorFromIdea(idea, flow) {
 
   if (flow) add(`Preserve this exact state progression: ${flow}.`);
 
-  const fields = blockAfterLabel(text, 'Fields');
-  if (fields.length) add(`Required fields: ${fields.join(' · ')}.`);
-
-  const collectPatterns = [
-    /[^\n.]*\bOSM\b[^\n.]*/ig,
-    /[^\n.]*\b(?:Navigate|Arrive|Depart)\b[^\n.]*/ig,
-    /[^\n.]*\b(?:arrival|departure) time\b[^\n.]*/ig,
-    /[^\n.]*\b(?:Drop Trailer|Hook Trailer|Seal Number|Reference \/ Load Number)\b[^\n.]*/ig,
-    /[^\n.]*\b(?:persist|remember|recent searches|saved stops|localStorage|locally)\b[^\n.]*/ig,
-    /[^\n.]*\bdo not show\b[^\n.]*/ig,
-  ];
-  for (const pattern of collectPatterns) {
-    for (const match of text.matchAll(pattern)) add(match[0]);
+  if (sourceHas(text, /\bNavigate\b/i) && sourceHas(text, /\bArrive\b/i) && sourceHas(text, /\bDepart\b/i)) {
+    add('Primary action: Navigate opens external navigation and advances to Arrive; Arrive records the arrival time and changes to Depart; Depart records departure, completes the stop, and activates the next stop at Navigate.');
   }
 
-  return lines.slice(0, 7);
+  const hasDropHook = sourceHas(text, /\bDrop Trailer\b/i) || sourceHas(text, /\bHook Trailer\b/i);
+  if (hasDropHook) {
+    const fieldsMatch = text.match(/Fields:\s*([^\n.]+)/i);
+    const fields = fieldsMatch ? fieldsMatch[1].trim() : 'Drop Trailer, Hook Trailer';
+    const carry = sourceHas(text, /Hook Trailer[^\n.]*next stop[^\n.]*Drop Trailer|carry[^\n.]*Hook Trailer[^\n.]*Drop Trailer/i)
+      ? ' Carry Hook Trailer forward as the next stop’s Drop Trailer.'
+      : '';
+    add(`Drop & Hook: keep the explicitly requested fields (${fields}) together in the active-stop workflow; suggest remembered trailer numbers when requested.${carry}`);
+  }
+
+  if (sourceHas(text, /\bOSM\b|search results?|location search/i)) {
+    const onlySearch = sourceHas(text, /OSM[^\n.]*search only|use OSM for search only/i) ? 'Use OSM for search only; ' : '';
+    const visible = sourceHas(text, /Business Name[^\n.]*Full Address/i) ? 'show only Business Name and Full Address; ' : '';
+    const hidden = sourceHas(text, /never display coordinates|do not show[^\n.]*(?:map|coordinates)|coordinates[^\n.]*internally/i) ? 'keep coordinates and technical location data internal; ' : '';
+    const stable = sourceHas(text, /debounce|flicker|layout jumping/i) ? 'debounce result updates without flicker, focus loss, or layout jumps.' : 'keep search interaction stable and task-focused.';
+    add(`Location search: ${onlySearch}${visible}${hidden}${stable}`);
+  }
+
+  if (sourceHas(text, /\bRecent\b|frequently used|Saved Stops|search memory/i)) {
+    add('Search memory: prioritize Recent, frequently used locations, and Saved Stops when requested; avoid duplicates and persist selections locally.');
+  }
+
+  if (sourceHas(text, /\bpersist\b|refreshing|reopening|locally/i)) {
+    add('Persistence: preserve every explicitly named active-workday value and saved record locally so refresh, close, or reopen never resets required progress.');
+  }
+
+  if (sourceHas(text, /final stop|Work Complete|Home Base|Navigate Home|Ending Mileage|Finish Day/i)) {
+    const parts = [];
+    if (sourceHas(text, /Work Complete/i)) parts.push('show Work Complete after the final stop');
+    if (sourceHas(text, /Home Base|Navigate Home/i)) parts.push('offer Navigate Home when Home Base exists without forcing it');
+    if (sourceHas(text, /Ending Mileage/i)) parts.push('collect Ending Mileage before the day is saved');
+    if (sourceHas(text, /Finish Day/i)) parts.push('keep Finish Day as the completion action');
+    add(`Completion: ${parts.join('; ')}.`);
+  }
+
+  if (lines.length < 3) {
+    for (const sentence of text.split(/(?<=[.!?])\s+|\n+/)) {
+      if (lines.length >= 5) break;
+      if (/\b(?:must|should|when|persist|remember|save|record|show|open|enable|disable|update|calculate)\b/i.test(sentence)) add(sentence);
+    }
+  }
+
+  return lines.filter(Boolean).slice(0, 7);
 }
 
 function scopeFromIdea(idea) {
