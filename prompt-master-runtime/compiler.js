@@ -132,6 +132,7 @@ const sectionOrder=[
   'Main Workflow','Screen Architecture','Required Product Behavior','Constraints / Scope Lock','Interaction Rules',
   'Tool Guidance','Allowed Actions','Forbidden Actions','Stop Conditions','Verification','Done When'
 ];
+const sectionSet=new Set(sectionOrder);
 
 const normalizeText=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function meaningKey(line){
@@ -161,6 +162,9 @@ function cleanDomainLeak(line,idea){
   if(!hasWorkRecords&&/saved work records/i.test(text)) return '- History must use the same saved records as the primary workflow so values stay consistent across views.';
   return text;
 }
+function isProtectedBehaviorLine(line){
+  return /(?:state progression|primary action state rules|equipment and trailer rules|location and search rules|persistence rules|completion rules|required operational fields)/i.test(line);
+}
 
 function normalizeAppInstructionSections(prompt,idea=''){
   const lines=String(prompt||'').split('\n');
@@ -168,12 +172,14 @@ function normalizeAppInstructionSections(prompt,idea=''){
   let current=null;
   for(const line of lines){
     const trimmed=line.trim();
-    const isHeading=/^[A-Za-z][A-Za-z &/()-]{1,48}:$/.test(trimmed);
-    if(isHeading){
+    const candidate=/^([A-Za-z][A-Za-z &/()-]{1,48}):$/.exec(trimmed)?.[1]||'';
+    const isKnownHeading=sectionSet.has(candidate);
+    const canCloseIdeaLock=current?.heading!=='Idea Lock'||candidate==='Design & UX Standard';
+    if(isKnownHeading&&canCloseIdeaLock){
       if(current) sections.push(current);
-      current={heading:trimmed.slice(0,-1),lines:[]};
+      current={heading:candidate,lines:[]};
     }else if(current&&trimmed){
-      current.lines.push(cleanDomainLeak(line,idea));
+      current.lines.push(current.heading==='Idea Lock'?line:cleanDomainLeak(line,idea));
     }
   }
   if(current) sections.push(current);
@@ -186,6 +192,10 @@ function normalizeAppInstructionSections(prompt,idea=''){
   sections.sort((a,b)=>rank(a.heading)-rank(b.heading));
 
   return sections.map(section=>{
+    if(section.heading==='Idea Lock'){
+      const exact=section.lines.map(x=>String(x).trimEnd()).filter(x=>x.trim()).join('\n').trim();
+      return `Idea Lock:\n${exact}`;
+    }
     const fallbacks=sectionFallbacks[section.heading]||[
       '- Preserve the explicit requirement represented by this section.',
       '- Keep the instruction directly tied to the product’s primary job.',
@@ -196,7 +206,9 @@ function normalizeAppInstructionSections(prompt,idea=''){
     let body=[];
     for(const raw of section.lines){
       const line=raw.trim();
-      if(!line||isNearDuplicate(line,body)) continue;
+      if(!line) continue;
+      const protectedLine=section.heading==='Required Product Behavior'&&isProtectedBehaviorLine(line);
+      if(!protectedLine&&isNearDuplicate(line,body)) continue;
       body.push(line);
     }
     for(const fallback of fallbacks){
