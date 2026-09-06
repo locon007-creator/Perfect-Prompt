@@ -1,4 +1,4 @@
-export const PURIFIER_VERSION='1.1.0';
+export const PURIFIER_VERSION='1.2.0';
 export const PURIFIER_SEALED=true;
 
 const DOMAIN_SIGNATURES=Object.freeze([
@@ -40,6 +40,17 @@ function foreignDomain(line,allowed){
     if(!allowed.has(sig.id)&&sig.re.test(line)) return sig.id;
   }
   return null;
+}
+
+function neutralizeKnownGeneratorLeak(line,sourceIdea){
+  let text=String(line||'');
+  const source=normalize(sourceIdea).toLowerCase();
+  text=text.replace(/\bactive work\b/gi,'active progress');
+  if(/Search memory:/i.test(text)&&/Saved Stops/i.test(text)&&! /\bSaved Stops?\b/i.test(source)){
+    text=text.replace(/,?\s*and Saved Stops when requested/gi,' when requested')
+      .replace(/Recent, frequently used locations\s+when requested/gi,'Recent and frequently used locations when requested');
+  }
+  return text;
 }
 
 function bulletIndent(line){
@@ -129,7 +140,7 @@ export function assertPromptPure(output,sourceIdea){
 export function purifyPrompt(output,sourceIdea){
   if(PURIFIER_SEALED!==true) throw new Error('Perfect Prompt sealed purifier is unavailable. Generation is blocked.');
   const allowed=activeDomains(sourceIdea);
-  let lines=normalize(output).split('\n');
+  let lines=normalize(output).split('\n').map(line=>neutralizeKnownGeneratorLeak(line,sourceIdea));
   lines=lines.filter(line=>HEADINGS.has(line.trim())||!foreignDomain(line,allowed));
   lines=removeOrphanLeadIns(lines);
   lines=removeExactDuplicates(lines);
