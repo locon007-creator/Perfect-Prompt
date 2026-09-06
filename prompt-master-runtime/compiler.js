@@ -126,6 +126,13 @@ const sectionFallbacks={
   ]
 };
 
+const sectionOrder=[
+  'Role','Product Mission','Idea Lock','Target User','Constraints / Scope Lock',
+  'Main Workflow','Screen Architecture','Required Product Behavior','Interaction Rules',
+  'Design & UX Standard','Tool Guidance','Allowed Actions','Forbidden Actions',
+  'Stop Conditions','Verification','Done When'
+];
+
 const normalizeText=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function meaningKey(line){
   return normalizeText(line)
@@ -171,6 +178,12 @@ function normalizeAppInstructionSections(prompt,idea=''){
   }
   if(current) sections.push(current);
   if(!sections.length) return prompt;
+
+  const rank=heading=>{
+    const i=sectionOrder.indexOf(heading);
+    return i===-1?sectionOrder.length:i;
+  };
+  sections.sort((a,b)=>rank(a.heading)-rank(b.heading));
 
   return sections.map(section=>{
     const fallbacks=sectionFallbacks[section.heading]||[
