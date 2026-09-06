@@ -128,10 +128,9 @@ const sectionFallbacks={
 };
 
 const sectionOrder=[
-  'Role','Product Mission','Idea Lock','Design & UX Standard','Target User','Constraints / Scope Lock',
-  'Main Workflow','Screen Architecture','Required Product Behavior','Interaction Rules',
-  'Tool Guidance','Allowed Actions','Forbidden Actions',
-  'Stop Conditions','Verification','Done When'
+  'Role','Product Mission','Idea Lock','Design & UX Standard','Target User',
+  'Main Workflow','Screen Architecture','Required Product Behavior','Constraints / Scope Lock','Interaction Rules',
+  'Tool Guidance','Allowed Actions','Forbidden Actions','Stop Conditions','Verification','Done When'
 ];
 
 const normalizeText=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
