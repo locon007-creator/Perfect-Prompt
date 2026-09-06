@@ -1,32 +1,46 @@
 const clean = value => String(value || '').replace(/\r/g, '').trim();
 const bullet = value => `- ${clean(value).replace(/^[-•]\s*/, '')}`;
 
-function explicitFlow(idea) {
-  const match = clean(idea).match(/(?:main workflow|primary workflow|main flow|workflow)\s*:\s*([^\n.]+)/i);
-  return match ? match[1].trim() : '';
+function linesOf(idea) {
+  return clean(idea).split('\n').map(x => x.trim());
 }
 
-function blockAfterLabel(idea, label) {
-  const lines = clean(idea).split('\n').map(x => x.trim());
+function labeledValues(idea, label, max = 12) {
+  const lines = linesOf(idea);
   const labelRx = new RegExp(`^${label}\\s*:?(?:\\s+(.*))?$`, 'i');
   for (let i = 0; i < lines.length; i++) {
     const match = lines[i].match(labelRx);
     if (!match) continue;
     const out = [];
-    if (match[1]) out.push(match[1]);
-    for (let j = i + 1; j < lines.length; j++) {
+    if (match[1]) out.push(match[1].replace(/^[-•]\s*/, ''));
+    for (let j = i + 1; j < lines.length && out.length < max; j++) {
       const line = lines[j];
       if (!line) {
         if (out.length) break;
         continue;
       }
-      if (/^[A-Z][A-Za-z &/+()-]{2,36}:?$/.test(line) && !/^[-•]/.test(line)) break;
-      out.push(line.replace(/^[-•]\s*/, ''));
-      if (out.length >= 8) break;
+      if (/^[A-Z][A-Za-z &/+()-]{2,40}:?$/.test(line) && !/^[-•]/.test(line)) break;
+      if (/^[-•]\s*/.test(line)) {
+        out.push(line.replace(/^[-•]\s*/, ''));
+        continue;
+      }
+      if (!out.length) out.push(line);
+      else break;
     }
     return out.filter(Boolean);
   }
   return [];
+}
+
+function explicitFlow(idea) {
+  const inline = clean(idea).match(/(?:main workflow|primary workflow|main flow|workflow)\s*:\s*([^\n.]+)/i);
+  if (inline) return inline[1].trim();
+  const block = labeledValues(idea, '(?:Main Workflow|Primary Workflow|Main Flow|Workflow)', 2);
+  return block.find(value => /(?:→|->|>)/.test(value)) || '';
+}
+
+function blockAfterLabel(idea, label) {
+  return labeledValues(idea, label, 8);
 }
 
 function purposeFromIdea(idea) {
@@ -68,8 +82,9 @@ function productBehaviorFromIdea(idea, flow) {
 
   const hasDropHook = sourceHas(text, /\bDrop Trailer\b/i) || sourceHas(text, /\bHook Trailer\b/i);
   if (hasDropHook) {
-    const fieldsMatch = text.match(/Fields:\s*([^\n.]+)/i);
-    const fields = fieldsMatch ? fieldsMatch[1].trim() : 'Drop Trailer, Hook Trailer';
+    const listFields = labeledValues(text, 'Fields', 12);
+    const inlineFields = text.match(/Fields:\s*([^\n.]+)/i);
+    const fields = listFields.length ? listFields.join(', ') : (inlineFields ? inlineFields[1].trim() : 'Drop Trailer, Hook Trailer');
     const carry = sourceHas(text, /Hook Trailer[^\n.]*next stop[^\n.]*Drop Trailer|carry[^\n.]*Hook Trailer[^\n.]*Drop Trailer/i)
       ? ' Carry Hook Trailer forward as the next stop’s Drop Trailer.'
       : '';
@@ -78,7 +93,10 @@ function productBehaviorFromIdea(idea, flow) {
 
   if (sourceHas(text, /\bOSM\b|search results?|location search/i)) {
     const onlySearch = sourceHas(text, /OSM[^\n.]*search only|use OSM for search only/i) ? 'Use OSM for search only; ' : '';
-    const visible = sourceHas(text, /Business Name[^\n.]*Full Address/i) ? 'show only Business Name and Full Address; ' : '';
+    const visibleList = labeledValues(text, 'Search results display only', 8);
+    const visible = visibleList.length
+      ? `show only ${visibleList.join(' and ')}; `
+      : (sourceHas(text, /Business Name[^\n.]*Full Address/i) ? 'show only Business Name and Full Address; ' : '');
     const hidden = sourceHas(text, /never display coordinates|do not show[^\n.]*(?:map|coordinates)|coordinates[^\n.]*internally/i) ? 'keep coordinates and technical location data internal; ' : '';
     const stable = sourceHas(text, /debounce|flicker|layout jumping/i) ? 'debounce result updates without flicker, focus loss, or layout jumps.' : 'keep search interaction stable and task-focused.';
     add(`Location search: ${onlySearch}${visible}${hidden}${stable}`);
@@ -118,9 +136,31 @@ function scopeFromIdea(idea) {
     const v = clean(value).replace(/^[-•]\s*/, '');
     if (v && !lines.includes(v)) lines.push(v);
   };
-  for (const match of text.matchAll(/[^\n.]*\b(?:not |do not|don't|never|only|no )[^\n.]*/ig)) add(match[0]);
+
+  const collectOnly = labeledValues(text, 'Collect only', 12);
+  if (collectOnly.length) add(`Collect only: ${collectOnly.join(' · ')}`);
+  const searchOnly = labeledValues(text, 'Search results display only', 12);
+  if (searchOnly.length) add(`Search results display only: ${searchOnly.join(' · ')}`);
+
+  for (const match of text.matchAll(/[^\n.]*\b(?:not |do not|don't|never|only|no )[^\n.]*/ig)) {
+    const value = match[0].trim();
+    if (/^(?:Collect only|Search results display only):?$/i.test(value)) continue;
+    add(value);
+  }
   if (!lines.length) add('Do not add product behavior that is not supported by the Idea Lock.');
   return lines.slice(0, 7);
+}
+
+function isLikelyTruncatedBullet(line) {
+  const match = clean(line).match(/^[-•]\s*([A-Za-z]{1,4})$/);
+  if (!match) return false;
+  const keep = new Set(['add','edit','save','open','show','hide','run','stop','done','yes','no','on','off','gps','ui']);
+  return !keep.has(match[1].toLowerCase());
+}
+
+export function sanitizeIdeaSource(idea) {
+  const lines = String(idea || '').replace(/\r/g, '').split('\n');
+  return lines.filter(line => !isLikelyTruncatedBullet(line)).join('\n').trim();
 }
 
 function replaceSection(prompt, heading, lines) {
@@ -131,8 +171,14 @@ function replaceSection(prompt, heading, lines) {
   return rx.test(prompt) ? prompt.replace(rx, replacement) : `${prompt}\n\n${heading}:\n${body}`;
 }
 
+function replaceIdeaLock(prompt, source) {
+  const rx = /(^|\n\n)Idea Lock:\n[\s\S]*?(?=\n\nDesign & UX Standard:|\n\nTarget User:|$)/m;
+  const replacement = `$1Idea Lock:\n${source}`;
+  return rx.test(prompt) ? prompt.replace(rx, replacement) : prompt;
+}
+
 export function applyAppIdeaLock(prompt, idea) {
-  const source = clean(idea);
+  const source = sanitizeIdeaSource(idea);
   if (!source) return prompt;
   const flow = explicitFlow(source);
   const states = flowStates(flow);
@@ -141,13 +187,15 @@ export function applyAppIdeaLock(prompt, idea) {
   architecture.push('Keep supporting views secondary; do not invent destinations that are absent from the Idea Lock.');
 
   let out = clean(prompt);
+  out = replaceIdeaLock(out, source);
   out = replaceSection(out, 'Product Mission', [purposeFromIdea(source)]);
   out = replaceSection(out, 'Target User', [targetUserFromIdea(source)]);
   if (flow) out = replaceSection(out, 'Main Workflow', [`Required flow: ${flow}.`, 'Keep this order unless the Idea Lock explicitly defines a branch.']);
   out = replaceSection(out, 'Screen Architecture', architecture);
   out = replaceSection(out, 'Required Product Behavior', productBehaviorFromIdea(source, flow));
   out = replaceSection(out, 'Constraints / Scope Lock', scopeFromIdea(source));
+  out = out.split('\n').filter(line => !isLikelyTruncatedBullet(line)).join('\n');
   return out;
 }
 
-export const _test = {explicitFlow, blockAfterLabel, purposeFromIdea, targetUserFromIdea, productBehaviorFromIdea};
+export const _test = {explicitFlow, blockAfterLabel, purposeFromIdea, targetUserFromIdea, productBehaviorFromIdea, scopeFromIdea, sanitizeIdeaSource, labeledValues};
