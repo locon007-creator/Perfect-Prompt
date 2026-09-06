@@ -11,6 +11,7 @@ import {validateFinal} from './validator.js';
 import {sanitizePromptInput,agenticAccessWarning} from './safety.js';
 import {resolveAppRole} from './app-role.js';
 import {buildAppDesignLayer} from './app-design.js';
+import {applyAppIdeaLock} from './app-idea-lock.js';
 
 function agentBlock(taskType,profile){
   const agentProfiles=new Set(['codex','claude-code','cline','autonomous-agent','app-generator','browser-agent']);
@@ -208,6 +209,10 @@ function normalizeAppInstructionSections(prompt,idea=''){
   }).join('\n\n');
 }
 
+function lockAppSections(prompt,idea){
+  return normalizeAppInstructionSections(applyAppIdeaLock(prompt,idea),idea);
+}
+
 export function compileWithPromptMaster(rawInput={}){
   const input=sanitizePromptInput(rawInput);
   const intent=extractIntent(input);
@@ -228,11 +233,11 @@ export function compileWithPromptMaster(rawInput={}){
   if(input.credentialNotice) prompt=`${input.credentialNotice}\n\n${prompt}`;
   const warning=agenticAccessWarning(profile,taskType);
   if(warning&&!prompt.includes(warning)) prompt=`${prompt}\n\n${warning}`;
-  if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
+  if(taskType==='app') prompt=lockAppSections(prompt,intent.idea);
   let validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   if(!validation.ok){
     prompt=repairDraft(prompt,diagnostics,runtimeContext);
-    if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
+    if(taskType==='app') prompt=lockAppSections(prompt,intent.idea);
     validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   }
   return {
