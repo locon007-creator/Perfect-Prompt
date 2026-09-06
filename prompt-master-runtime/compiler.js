@@ -126,7 +126,36 @@ const sectionFallbacks={
   ]
 };
 
-function normalizeAppInstructionSections(prompt){
+const normalizeText=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function meaningKey(line){
+  return normalizeText(line)
+    .replace(/\b(the|a|an|this|that|only|all|every|relevant|required|explicit|requested|current)\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function isNearDuplicate(line,kept){
+  const key=meaningKey(line);
+  if(!key) return true;
+  return kept.some(existing=>{
+    const other=meaningKey(existing);
+    if(key===other) return true;
+    const a=new Set(key.split(' ')), b=new Set(other.split(' '));
+    const overlap=[...a].filter(x=>b.has(x)).length;
+    const denom=Math.max(1,Math.min(a.size,b.size));
+    return overlap/denom>=0.78;
+  });
+}
+function cleanDomainLeak(line,idea){
+  const text=String(line||'').trim();
+  const source=String(idea||'').toLowerCase();
+  const hasShift=/\bshift|timesheet|punch in|punch out|work hours\b/.test(source);
+  const hasWorkRecords=/\bwork log|work record|timesheet|shift|job site|mileage log\b/.test(source);
+  if(!hasShift&&/active shift/i.test(text)) return '- Persist active app state and saved records locally so refresh, close, or reopen does not lose required data.';
+  if(!hasWorkRecords&&/saved work records/i.test(text)) return '- History must use the same saved records as the primary workflow so values stay consistent across views.';
+  return text;
+}
+
+function normalizeAppInstructionSections(prompt,idea=''){
   const lines=String(prompt||'').split('\n');
   const sections=[];
   let current=null;
@@ -136,15 +165,14 @@ function normalizeAppInstructionSections(prompt){
     if(isHeading){
       if(current) sections.push(current);
       current={heading:trimmed.slice(0,-1),lines:[]};
-    }else if(current){
-      if(trimmed) current.lines.push(line);
+    }else if(current&&trimmed){
+      current.lines.push(cleanDomainLeak(line,idea));
     }
   }
   if(current) sections.push(current);
   if(!sections.length) return prompt;
 
   return sections.map(section=>{
-    let body=section.lines.filter(line=>line.trim());
     const fallbacks=sectionFallbacks[section.heading]||[
       '- Preserve the explicit requirement represented by this section.',
       '- Keep the instruction directly tied to the product’s primary job.',
@@ -152,16 +180,17 @@ function normalizeAppInstructionSections(prompt){
       '- Do not invent unrelated scope, data, screens, or behavior.',
       '- Verify the section is fully satisfied in the finished result.'
     ];
+    let body=[];
+    for(const raw of section.lines){
+      const line=raw.trim();
+      if(!line||isNearDuplicate(line,body)) continue;
+      body.push(line);
+    }
     for(const fallback of fallbacks){
       if(body.length>=5) break;
-      if(!body.some(line=>line.trim()===fallback)) body.push(fallback);
+      if(!isNearDuplicate(fallback,body)) body.push(fallback);
     }
-    if(body.length>7){
-      const kept=body.slice(0,6);
-      const overflow=body.slice(6).map(line=>line.replace(/^\s*-\s*/, '').trim()).filter(Boolean).join(' ');
-      kept.push(`- ${overflow}`);
-      body=kept;
-    }
+    if(body.length>7) body=body.slice(0,7);
     return `${section.heading}:\n${body.join('\n')}`;
   }).join('\n\n');
 }
@@ -186,11 +215,11 @@ export function compileWithPromptMaster(rawInput={}){
   if(input.credentialNotice) prompt=`${input.credentialNotice}\n\n${prompt}`;
   const warning=agenticAccessWarning(profile,taskType);
   if(warning&&!prompt.includes(warning)) prompt=`${prompt}\n\n${warning}`;
-  if(taskType==='app') prompt=normalizeAppInstructionSections(prompt);
+  if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
   let validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   if(!validation.ok){
     prompt=repairDraft(prompt,diagnostics,runtimeContext);
-    if(taskType==='app') prompt=normalizeAppInstructionSections(prompt);
+    if(taskType==='app') prompt=normalizeAppInstructionSections(prompt,intent.idea);
     validation=validateFinal(prompt,{...runtimeContext,diagnostics});
   }
   return {
