@@ -94,8 +94,18 @@ function compactBlankLines(lines){
 
 function assertSingleCanonicalSections(lines){
   const counts=new Map();
+  let insideIdeaLock=false;
   for(const line of lines){
     const t=line.trim();
+    if(t==='Idea Lock:'){
+      insideIdeaLock=true;
+      counts.set(t,(counts.get(t)||0)+1);
+      continue;
+    }
+    if(insideIdeaLock){
+      if(t==='Design & UX Standard:') insideIdeaLock=false;
+      else continue;
+    }
     if(!HEADINGS.has(t)) continue;
     counts.set(t,(counts.get(t)||0)+1);
   }
