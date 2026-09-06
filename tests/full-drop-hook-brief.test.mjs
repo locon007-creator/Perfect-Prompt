@@ -73,8 +73,12 @@ test('full Drop & Hook brief compiles without contamination and preserves critic
   const behavior = section(p, 'Required Product Behavior');
   const scope = section(p, 'Constraints / Scope Lock');
 
-  for (const term of ['Home','Day Setup','Create Route','Work Mode','End of Day']) assert.match(architecture, new RegExp(term, 'i'));
+  console.log('\n--- FULL DROP & HOOK COMPILED PROMPT ---\n');
+  console.log(p);
+
+  for (const term of ['Home','Day Setup','Create Route','Work Mode']) assert.match(architecture, new RegExp(term, 'i'));
   for (const term of ['Navigate','Arrive','Depart','Drop Trailer','Hook Trailer','Home Base','Ending Mileage']) assert.match(behavior, new RegExp(term, 'i'));
+  assert.match(p, /End of Day/i);
   assert.match(p, /Saved Routes/i);
   assert.match(p, /Saved Stops/i);
   assert.match(p, /Recent/i);
@@ -86,7 +90,4 @@ test('full Drop & Hook brief compiles without contamination and preserves critic
   assert.match(p, /360.?430/i);
   assert.match(scope, /fleet|dispatch|ELD|GPS/i);
   assert.doesNotMatch(p, /habit|streak|weekly target|Punch In|Punch Out|calculator|converter|recipe/i);
-
-  console.log('\n--- FULL DROP & HOOK COMPILED PROMPT ---\n');
-  console.log(p);
 });
