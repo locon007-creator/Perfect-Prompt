@@ -68,8 +68,8 @@ function productBehaviorFromIdea(idea, flow) {
 
   const hasDropHook = sourceHas(text, /\bDrop Trailer\b/i) || sourceHas(text, /\bHook Trailer\b/i);
   if (hasDropHook) {
-    const fieldsMatch = text.match(/Fields:\s*([^\n]+)/i);
-    const fields = fieldsMatch ? fieldsMatch[1].replace(/\.$/, '').trim() : 'Drop Trailer, Hook Trailer';
+    const fieldsMatch = text.match(/Fields:\s*([^\n.]+)/i);
+    const fields = fieldsMatch ? fieldsMatch[1].trim() : 'Drop Trailer, Hook Trailer';
     const carry = sourceHas(text, /Hook Trailer[^\n.]*next stop[^\n.]*Drop Trailer|carry[^\n.]*Hook Trailer[^\n.]*Drop Trailer/i)
       ? ' Carry Hook Trailer forward as the next stop’s Drop Trailer.'
       : '';
