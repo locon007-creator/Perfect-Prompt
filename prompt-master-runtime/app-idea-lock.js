@@ -48,6 +48,15 @@ function flowStates(flow) {
   return flow.split(/\s*(?:→|->|>)\s*/).map(x => x.trim()).filter(Boolean);
 }
 
+function matches(text, pattern) {
+  return [...text.matchAll(pattern)].map(match => clean(match[0]).replace(/^[-•]\s*/, '')).filter(Boolean);
+}
+
+function compact(label, items) {
+  const unique = [...new Set(items.map(clean).filter(Boolean))];
+  return unique.length ? `${label}: ${unique.join(' ')}` : '';
+}
+
 function productBehaviorFromIdea(idea, flow) {
   const text = clean(idea);
   const lines = [];
@@ -59,21 +68,15 @@ function productBehaviorFromIdea(idea, flow) {
   if (flow) add(`Preserve this exact state progression: ${flow}.`);
 
   const fields = blockAfterLabel(text, 'Fields');
-  if (fields.length) add(`Required fields: ${fields.join(' · ')}.`);
+  if (fields.length) add(`Required operational fields: ${fields.join(' · ')}.`);
 
-  const collectPatterns = [
-    /[^\n.]*\bOSM\b[^\n.]*/ig,
-    /[^\n.]*\b(?:Navigate|Arrive|Depart)\b[^\n.]*/ig,
-    /[^\n.]*\b(?:arrival|departure) time\b[^\n.]*/ig,
-    /[^\n.]*\b(?:Drop Trailer|Hook Trailer|Seal Number|Reference \/ Load Number)\b[^\n.]*/ig,
-    /[^\n.]*\b(?:persist|remember|recent searches|saved stops|localStorage|locally)\b[^\n.]*/ig,
-    /[^\n.]*\bdo not show\b[^\n.]*/ig,
-  ];
-  for (const pattern of collectPatterns) {
-    for (const match of text.matchAll(pattern)) add(match[0]);
-  }
+  add(compact('Primary action state rules', matches(text, /[^\n.]*\b(?:Navigate|Arrive|Depart)\b[^\n.]*/ig)));
+  add(compact('Equipment and trailer rules', matches(text, /[^\n.]*\b(?:Drop Trailer|Hook Trailer|Seal Number|Reference \/ Load Number|current trailer|trailer fields?)\b[^\n.]*/ig)));
+  add(compact('Location and search rules', matches(text, /[^\n.]*\b(?:OSM|coordinates?|latitude|longitude|search results?|search behavior|Recent|Saved Stops)\b[^\n.]*/ig)));
+  add(compact('Persistence rules', matches(text, /[^\n.]*\b(?:persist|remember|refreshing|reopening|saved routes|recent searches|daily history|locally)\b[^\n.]*/ig)));
+  add(compact('Completion rules', matches(text, /[^\n.]*\b(?:final stop|Work Complete|Home Base|Navigate Home|Ending Mileage|Finish Day)\b[^\n.]*/ig)));
 
-  return lines.slice(0, 7);
+  return lines.filter(Boolean).slice(0, 7);
 }
 
 function scopeFromIdea(idea) {
