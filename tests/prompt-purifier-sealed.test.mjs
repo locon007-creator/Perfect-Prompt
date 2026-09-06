@@ -29,7 +29,7 @@ test('purifier keeps domain terms when they belong to the source idea',()=>{
 test('sealed compiler always returns a purified prompt',()=>{
   const out=compileWithPromptMaster({idea:budgetIdea,goal:'build',priorities:['mobile','simple'],target:'agent'});
   assert.equal(PURIFIER_SEALED,true);
-  assert.equal(PURIFIER_VERSION,'1.0.0');
+  assert.equal(PURIFIER_VERSION,'1.1.0');
   assert.doesNotMatch(out.prompt,/Saved Stops|Drop Trailer|Hook Trailer|starting mileage|ending mileage/i);
   assert.equal(out.purifier?.sealed,true);
 });
