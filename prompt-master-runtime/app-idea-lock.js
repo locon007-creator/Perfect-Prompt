@@ -156,7 +156,7 @@ function productBehaviorFromIdea(idea, flow) {
   }
 
   if (sourceHas(text, /\bpersist\b|refreshing|reopening|locally/i)) {
-    add('Persistence: preserve every explicitly named active-workday value and saved record locally so refresh, close, or reopen never resets required progress.');
+    add('Persistence: preserve every explicitly named active value and saved record locally so refresh, close, or reopen never resets required progress.');
   }
 
   if (sourceHas(text, /final stop|Work Complete|Day Complete|Home Base|Navigate Home|Ending Mileage|Finish Day/i)) {
