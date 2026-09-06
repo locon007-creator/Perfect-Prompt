@@ -194,6 +194,7 @@ export function applyAppIdeaLock(prompt, idea) {
   out = replaceSection(out, 'Screen Architecture', architecture);
   out = replaceSection(out, 'Required Product Behavior', productBehaviorFromIdea(source, flow));
   out = replaceSection(out, 'Constraints / Scope Lock', scopeFromIdea(source));
+  out = out.split('\n').filter(line => !isLikelyTruncatedBullet(line)).join('\n');
   return out;
 }
 
