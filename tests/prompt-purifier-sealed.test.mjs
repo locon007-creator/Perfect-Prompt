@@ -18,6 +18,15 @@ test('purifier removes foreign trucking leakage from a finance prompt',()=>{
   assert.doesNotMatch(clean,/Home must immediately show:\s*$/m);
 });
 
+test('generic location memory stays useful without inheriting Saved Stops',()=>{
+  const idea='Build a simple personal place finder. Keep recent and frequently used locations available in search and remember them locally.';
+  const dirty='Required Product Behavior:\n- Search memory: prioritize Recent, frequently used locations, and Saved Stops when requested; avoid duplicates and persist selections locally.\n- Persist required state so navigation does not reset active work.';
+  const clean=purifyPrompt(dirty,idea);
+  assert.match(clean,/Recent and frequently used locations/i);
+  assert.match(clean,/active progress/i);
+  assert.doesNotMatch(clean,/Saved Stops|active work/i);
+});
+
 test('purifier keeps domain terms when they belong to the source idea',()=>{
   const truckingIdea='Build Drop & Hook Assistant for one truck driver. Track truck number, trailer number, mileage, Saved Stops, drop trailer, hook trailer, seal and reference.';
   const prompt='Required Product Behavior:\n- Saved Stops persist locally.\n- Current trailer becomes Stop 1 Drop Trailer.';
@@ -29,7 +38,7 @@ test('purifier keeps domain terms when they belong to the source idea',()=>{
 test('sealed compiler always returns a purified prompt',()=>{
   const out=compileWithPromptMaster({idea:budgetIdea,goal:'build',priorities:['mobile','simple'],target:'agent'});
   assert.equal(PURIFIER_SEALED,true);
-  assert.equal(PURIFIER_VERSION,'1.1.0');
+  assert.equal(PURIFIER_VERSION,'1.2.0');
   assert.doesNotMatch(out.prompt,/Saved Stops|Drop Trailer|Hook Trailer|starting mileage|ending mileage/i);
   assert.equal(out.purifier?.sealed,true);
 });
