@@ -1,4 +1,12 @@
 const family=(id,label,rules,extra={})=>({id,label,rules,...extra});
+const EXECUTION_FIRST_APP_RULES=Object.freeze([
+  'Build the complete app now from this specification.',
+  'Do not ask product-design questions already answered by the Idea Lock; infer minor implementation details using the simplest production-ready choice.',
+  'Do not stop at a scaffold, wireframe, dashboard shell, or placeholder UI.',
+  'Every named screen, field, action, state transition, persistence rule, and calculation must work in the first build.',
+  'Only stop if an external credential, irreversible action, or genuinely missing requirement prevents implementation.',
+  'Inspect, build, test, fix, and verify the complete first version before presenting it.'
+]);
 const BASE={
  general:family('general','General AI',['State the goal once','Make constraints explicit','Define what done looks like','Do not request hidden reasoning']),
  openai:family('openai','ChatGPT / OpenAI GPT',['Use lean Goal, Context, Constraints, and Done for complex work','Define approval boundaries and required tool evidence','Ask for conclusions, assumptions, evidence, and checks—not hidden reasoning'],{needsCurrentVerification:true}),
@@ -6,7 +14,8 @@ const BASE={
  claude:family('claude','Claude',['Be clear and direct','Use structured sections/XML only when mixed context benefits','Prefer positive instructions','Use scope, acceptance criteria, action boundaries, and evidence for complex work'],{needsCurrentVerification:true}),
  'claude-code':family('claude-code','Claude Code',['Anchor relevant files/directories','Include starting state and target state','Allowed/forbidden actions and stop conditions are mandatory','Stop before destructive actions, dependencies, or schema changes'],{needsCurrentVerification:true}),
  codex:family('codex','Codex / ChatGPT Work / Codex IDE',['Use Goal, Context, Scope, Constraints, Approval Boundaries, Done','Concrete verification commands when known','One primary agent owns synthesis; bounded subagents only when useful'],{needsCurrentVerification:true}),
- arena:family('arena','Arena AI',['Build the complete app now from this specification.','Do not ask product-design questions already answered by the Idea Lock; infer minor implementation details using the simplest production-ready choice.','Do not stop at a scaffold, wireframe, dashboard shell, or placeholder UI.','Every named screen, field, action, state transition, persistence rule, and calculation must work in the first build.','Only stop if an external credential, irreversible action, or genuinely missing requirement prevents implementation.','Inspect, build, test, fix, and verify the complete first version before presenting it.']),
+ 'app-agent':family('app-agent','App Builder / Coding Agent',EXECUTION_FIRST_APP_RULES),
+ arena:family('arena','Arena AI',EXECUTION_FIRST_APP_RULES),
  gemini:family('gemini','Gemini',['Use explicit format locks','Ground factual tasks','If uncertain say [uncertain]','Use long context only when relevant'],{needsCurrentVerification:true}),
  antigravity:family('antigravity','Antigravity',['Describe outcomes, not low-level steps','Request an artifact/plan before execution when review is useful','Include browser verification for UI work','Ask before destructive terminal commands'],{needsCurrentVerification:true}),
  grok:family('grok','Grok / xAI',['Use Goal, Context/Input, Constraints, Tools/Permissions, Done','Require search/citations for current facts','Define stop conditions and approval boundaries for tool-heavy work'],{needsCurrentVerification:true}),
@@ -43,7 +52,7 @@ export function resolveProfile(intent,taskType){
   if(/\b(zapier|make\.com|n8n|workflow ai)\b/.test(s)) return BASE['workflow-ai'];
   if(/\b(sora|runway|kling|ltx video|dream machine|luma)\b/.test(s)) return BASE.video;
   if(taskType==='visual-generate'||t==='visual') return BASE.visual;
-  if(t==='agent') return BASE.codex;
+  if(t==='agent') return taskType==='app'?BASE['app-agent']:BASE.codex;
   if(t==='chat') return BASE.general;
   if(BASE[t]) return BASE[t];
   if(/\barena(?: ai)?\b/.test(s)) return BASE.arena;
