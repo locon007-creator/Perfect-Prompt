@@ -3,7 +3,7 @@ const rx=(s,r)=>(String(s).match(r)||[])[1]||'';
 
 const TOOL_ALIASES=[
   [/^chatgpt$|^openai$|^gpt(?:-|\s)?/i,'openai'],[/^claude$/i,'claude'],[/^claude code$/i,'claude-code'],
-  [/^codex$|^chatgpt work$/i,'codex'],[/^gemini$/i,'gemini'],[/^grok$|^xai$/i,'grok'],
+  [/^codex$|^chatgpt work$/i,'codex'],[/^arena(?: ai)?$/i,'arena'],[/^gemini$/i,'gemini'],[/^grok$|^xai$/i,'grok'],
   [/^cursor$|^windsurf$/i,'cursor-windsurf'],[/^cline$/i,'cline'],[/^antigravity$/i,'antigravity'],
   [/^qwen\s*2\.5$/i,'qwen25'],[/^qwen\s*3$/i,'qwen3'],[/^ollama$/i,'ollama'],[/^deepseek(?:-|\s)?r1$/i,'deepseek-r1'],[/^minimax/i,'minimax'],
   [/^midjourney$|^dall[- ]?e(?:\s*3)?$|^stable diffusion$/i,'visual'],[/^sora$|^runway$|^kling$|^ltx video$|^dream machine$|^luma$/i,'video'],
@@ -35,7 +35,8 @@ export function extractIntent({idea='',goal='build',priorities=[],target='auto',
   const task=text.replace(/^\s*(task\s*:\s*)?/i,'').split(/\n{2,}/)[0].trim()||text;
   let targetTool=normalizeTool(specificTool)||target||'auto';
   if(targetTool==='auto'){
-    if(/\b(cursor|windsurf)\b/i.test(text)) targetTool='cursor-windsurf';
+    if(/\barena(?: ai)?\b/i.test(text)) targetTool='arena';
+    else if(/\b(cursor|windsurf)\b/i.test(text)) targetTool='cursor-windsurf';
     else if(/\bclaude code\b/i.test(text)) targetTool='claude-code';
     else if(/\bclaude\b/i.test(text)) targetTool='claude';
     else if(/\b(codex|chatgpt work)\b/i.test(text)) targetTool='codex';
