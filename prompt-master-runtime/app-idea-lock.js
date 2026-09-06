@@ -183,6 +183,8 @@ function scopeFromIdea(idea) {
   const lines = [];
   const add = value => {
     const v = clean(value).replace(/^[-•]\s*/, '');
+    if (!v) return;
+    if (/^(?:Collect only|Search results (?:display|show) only):?$/i.test(v)) return;
     if (v && !lines.includes(v)) lines.push(v);
   };
 
@@ -193,7 +195,7 @@ function scopeFromIdea(idea) {
     ...labeledValues(text, 'Search results show only', 12)
   ];
   const searchUnique = [...new Map(searchOnly.map(v => [v.toLowerCase(), v])).values()];
-  if (searchUnique.length) add(`Search results show only: ${searchUnique.join(' · ')}`);
+  if (searchUnique.length) add(`Search results display only: ${searchUnique.join(' · ')}`);
 
   for (const match of text.matchAll(/[^\n.]*\b(?:not |do not|don't|never|only|no )[^\n.]*/ig)) {
     const value = match[0].trim();
