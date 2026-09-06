@@ -128,9 +128,9 @@ const sectionFallbacks={
 };
 
 const sectionOrder=[
-  'Role','Product Mission','Idea Lock','Target User','Constraints / Scope Lock',
+  'Role','Product Mission','Idea Lock','Design & UX Standard','Target User','Constraints / Scope Lock',
   'Main Workflow','Screen Architecture','Required Product Behavior','Interaction Rules',
-  'Design & UX Standard','Tool Guidance','Allowed Actions','Forbidden Actions',
+  'Tool Guidance','Allowed Actions','Forbidden Actions',
   'Stop Conditions','Verification','Done When'
 ];
 
